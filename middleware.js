@@ -26,6 +26,16 @@ function validateRegistration(req, res, next) {
     }
 }
 
+function validateTicket(req, res, next) {
+    if(!req.body.amount || !req.body.reason) {
+        req.body.valid = false;
+        next()
+    } else {
+        req.body.valid = true;
+        next()
+    }
+}
+
 function validateUserCredentials(req, res, next) {
     console.log("req.body.username = ", req.body.username)
     dao.getUserByUsername(req.body.username)
@@ -45,5 +55,5 @@ function validateUserCredentials(req, res, next) {
 
 
 module.exports = {
-    validateRegistration, validateUserCredentials
+    validateRegistration, validateUserCredentials, validateTicket
 }

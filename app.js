@@ -67,6 +67,23 @@ server.post('/users', mw.validateRegistration, (req, res) => {
     }
 })
 
+server.post('/tickets', mw.validateTicket, (req, res) => {
+    const body = req.body;
+    if (req.body.valid) {
+        ticketDao.createTicket(uuid.v4(), body.amount, body.reason, body.requester_id, "pending")
+            .then(() => {
+                res.send({
+                    message: "Ticket successfully created"
+                })
+            })
+            .catch((err) => {
+                res.send({message: `Ticket creation error: ${err}`})
+            })
+    } else {
+        res.send({message: "Invalid ticket"})
+    }
+})
+
 server.get('/users', mw.validateUserCredentials, (req, res) => {
     const body = req.body;
     if(req.body.valid) {
