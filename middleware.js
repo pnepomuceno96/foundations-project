@@ -8,9 +8,21 @@ function validateRegistration(req, res, next) {
         req.body.valid = false;
         next()
     } else {
-        req.body.valid = true;
-        // TODO: Also ensure that username is not already taken
-        next()
+        //Ensure username does not already exist
+        dao.getUserByUsername(req.body.username)
+            .then((data) => {
+                if (data.Items === undefined || data.Items.length ==0){
+                    req.body.valid = true;
+                    next()
+                } else {
+                    req.body.valid = false;
+                    next()
+                }
+            })
+            .catch(() => {
+                res.send({message: `Error fetching username: ${err}`})
+            })
+        
     }
 }
 
@@ -18,7 +30,6 @@ function validateUserCredentials(req, res, next) {
     console.log("req.body.username = ", req.body.username)
     dao.getUserByUsername(req.body.username)
         .then((data) => {
-            console.log("Data = ", data)
             if (data.Items[0].password == req.body.password) {
                 req.body.valid = true;
                 next()
