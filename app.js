@@ -82,11 +82,12 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
 })
 
 server.get('/empEndpoint', (req,res) => {
-    const token = req.headers.authorization.split(' ')[1];
+    console.log(req.headers)
+    const token = req.headers.authorization.split(' ')[0];
 
     jwtUtil.verifyTokenAndReturnPayload(token)
         .then((payload) => {
-            if(payload.role === 'employee') {
+            if(payload.isFinanceManager === false) {
                 res.send({
                     message: `Welcome employee ${payload.username}`
                 })
@@ -106,14 +107,14 @@ server.get('/empEndpoint', (req,res) => {
         })
 })
 
-server.get('/adminsEndpoint', (req,res) => {
-    const token = req.headers.authorization.split(' ')[1];
+server.get('/managersEndpoint', (req,res) => {
+    const token = req.headers.authorization.split(' ')[0];
 
     jwtUtil.verifyTokenAndReturnPayload(token)
         .then((payload) => {
-            if(payload.role === 'admin') {
+            if(payload.isFinanceManager === true) {
                 res.send({
-                    message: `Welcome admin ${payload.username}`
+                    message: `Welcome manager ${payload.username}`
                 })
             } else {
                 res.statusCode = 401;
@@ -183,6 +184,19 @@ server.get('/tickets/pending', (req, res) => {
             })
         })
     
+})
+
+// Get tickets by the author's user id
+server.get('/tickets', (req, res) => {
+    const requestUrl = url.parse(req.url).query;
+    console.log("requestUrl = ", requestUrl)
+    ticketDao.getTicketsByRequesterId(requestUrl)
+        .then((data) => {
+            res.send('Successfully retrieved tickets')
+            console.log(data.Items)
+        }).catch((err) => {
+            res.send({message: `Error: ${err}`})
+        })
 })
 
 server.put('/tickets', (req, res) => {

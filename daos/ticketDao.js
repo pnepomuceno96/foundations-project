@@ -34,6 +34,20 @@ function getPendingTickets() {
     return docClient.scan(params).promise();
 }
 
+function getTicketsByRequesterId(requester_id) {
+    const params = {
+        TableName: 'requests',
+        FilterExpression: '#r = :value',
+        ExpressionAttributeNames: {
+            '#r': 'requester_id'
+        },
+        ExpressionAttributeValues: {
+            ':value': requester_id
+        }
+    };
+    return docClient.scan(params).promise();
+}
+
 //Accept or deny ticket/request
 function setTicketStatusById(request_id, status) {
     const params = {
@@ -51,5 +65,5 @@ function setTicketStatusById(request_id, status) {
 }
 
 module.exports = {
-    createTicket, getPendingTickets, setTicketStatusById
+    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId
 }
