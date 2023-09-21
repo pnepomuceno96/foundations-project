@@ -10,6 +10,8 @@ const userDao = require('./daos/userDao');
 const ticketDao = require('./daos/ticketDao')
 const mw = require('./middleware')
 const AWS = require('aws-sdk');
+const session = require('express-session');
+const cookieParser = require('cookie-parser')
 
 const logger = createLogger({
     level: 'info',
@@ -29,9 +31,7 @@ const logger = createLogger({
 // AWS.config.update({
 //     region: 'us-east-2'
 // });
-
-const users = []
-const requests = []
+server.use(cookieParser())
 
 const dynamoDB = new AWS.DynamoDB()
 
@@ -46,6 +46,11 @@ dynamoDB.listTables({}, (err, data) => {
 });
 
 server.use(bodyParser.json());
+server.use(session({
+    secret: 'thisisasecret',
+    saveUninitialized: true,
+    resave: false //store session every time
+}))
 
 
 
@@ -85,13 +90,27 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
 })
 
 server.get('/users', mw.validateUserCredentials, (req, res) => {
+    //const currentSession = req.session;
+    //console.log(`currentSession = ${currentSession}`)
     const body = req.body;
     if(req.body.valid) {
         userDao.getUserByUsername(body.username)
             .then((data) => {
-                res.send({
-                    message: `Successfully logged in to ${data.Items[0].username}'s account`
-                })
+                const success = `Successfully logged in to ${data.Items[0].username}'s account. \n`
+                if(data.Items[0].isFinanceManager == false) {
+                    res.send({
+                        message: `${success}Directing you to employee dashboard`
+                    })
+                } else if (data.Items[0].isFinanceManager == true) {
+                    res.send({
+                        message: `${success}Directing you to manager dashboard`
+                    })
+                } else {
+                    res.statusCode = 401;
+                    res.send({
+                        message: "You do not have a role in the company!"
+                    })
+                }
             })
             .catch((err) => {
                 res.send({
@@ -103,6 +122,37 @@ server.get('/users', mw.validateUserCredentials, (req, res) => {
             message: "Login failed; Invalid credentials"
         })
     }
+})
+
+server.get('/tickets/pending', (req, res) => {
+    ticketDao.getPendingTickets()
+        .then((data) => {
+            res.send({
+                message: `Successfully retrieved pending tickets: ${data.Items}`
+            })
+            console.log(data.Items)
+        })
+        .catch((err) => {
+            res.send({
+                message: `Ticket retrieval error: ${err}`
+            })
+        })
+    
+})
+
+server.put('/tickets', (req, res) => {
+    const requestUrl = url.parse(req.url).query;
+    const body = req.body;
+    console.log("body = ", body)
+    console.log("requestUrl = ", requestUrl)
+    ticketDao.setTicketStatusById(requestUrl, body.status)
+        .then((data) => {
+            res.send({
+                message: `Successfully ${body.status} ticket ${requestUrl}`
+            })
+        }).catch((err) => {
+            res.send({message: `Error: ${err}`})
+        })
 })
 
 server.listen(PORT, () => {
