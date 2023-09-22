@@ -246,15 +246,27 @@ server.put('/tickets', (req, res) => {
         .then((payload) => {
             // Make sure that the user processing the ticket is a manager
             if(payload.isFinanceManager === true) {
-                ticketDao.setTicketStatusById(requestUrl, body.status)
-                    .then((data) => {
-                        res.send({
-                            message: `Successfully ${body.status} ticket ${requestUrl}`
-                        })
-                    }).catch((err) => {
-                        res.statusCode = 401
-                        res.send({message: `Error: ${err}`})
-                    })
+                // TODO: Make sure that the ticket in question is still pending(not previously processed)
+                ticketDao.getTicketById(requestUrl).then((data) => {
+                    console.log(`line 251 | data = ${JSON.stringify(data.Item)}`)
+                    if (data.Item.status === 'pending') {
+                        ticketDao.setTicketStatusById(requestUrl, body.status)
+                            .then(() => {
+                                res.send({
+                                    message: `Successfully ${body.status} ticket ${requestUrl}`
+                                })
+                            }).catch((err) => {
+                                res.statusCode = 401
+                                res.send({message: `Error: ${err}`})
+                            })
+                    } else {
+                        res.statusCode = 401,
+                        res.send({message: "Ticket has already been processed"})
+                    }
+                }).catch((err) => {
+                    res.statusCode = 401,
+                    res.send({message: `Ticket retrieval error: ${err}`})
+                })
             } else {
                 res.statusCode = 401,
                 res.send({message: 'You are not authorized to process tickets!'})

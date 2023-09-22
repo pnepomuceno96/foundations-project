@@ -34,6 +34,14 @@ function getPendingTickets() {
     return docClient.scan(params).promise();
 }
 
+function getTicketById(request_id) {
+    const params = {
+        TableName: 'requests',
+        Key: { request_id }
+    }
+    return docClient.get(params).promise()
+}
+
 function getTicketsByRequesterId(requester_id) {
     const params = {
         TableName: 'requests',
@@ -65,5 +73,5 @@ function setTicketStatusById(request_id, status) {
 }
 
 module.exports = {
-    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId
+    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId, getTicketById
 }
