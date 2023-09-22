@@ -64,30 +64,40 @@ server.post('/users', mw.validateRegistration, (req, res) => {
     }
 })
 
+
+//TODO: post ticket using token
 server.post('/tickets', mw.validateTicket, (req, res) => {
+    const token = req.headers.authorization.split(' ')[0];
     const body = req.body;
-    if (req.body.valid) {
-        ticketDao.createTicket(uuid.v4(), body.amount, body.reason, body.requester_id, "pending")
-            .then((data) => {
-                console.log(`Posted data: ${data}`)
-                userDao.addTicketToUser(body.requester_id, body, res)
-                    .then(() => {
-                        res.send({
-                            message: "Ticket successfully created"
-                        })
+    jwtUtil.verifyTokenAndReturnPayload(token)
+        .then((payload) => {
+            if (req.body.valid) {
+                ticketDao.createTicket(uuid.v4(), body.amount, body.reason, payload.user_id, "pending")
+                    .then((data) => {
+                        console.log(`Posted data: ${data}`)
+                        userDao.addTicketToUser(payload.user_id, body, res)
+                            .then(() => {
+                                res.send({
+                                    message: "Ticket successfully created"
+                                })
+                            })
+                            .catch((err) => {
+                                res.send({
+                                    message: `Ticket creation error: ${err}`
+                                })
+                            })
                     })
                     .catch((err) => {
-                        res.send({
-                            message: `Ticket creation error: ${err}`
-                        })
+                        res.send({message: `Ticket creation error: ${err}`})
                     })
-            })
-            .catch((err) => {
-                res.send({message: `Ticket creation error: ${err}`})
-            })
-    } else {
-        res.send({message: "Invalid ticket"})
-    }
+            } else {
+                res.statusCode = 401
+                res.send({message: "Invalid ticket, missing important fields"})
+            }
+        }).catch((err) => {
+            res.statusCode = 401
+            res.send({message: `Authorization failed: ${err}`})
+        })
 })
 
 server.get('/empEndpoint', (req,res) => {
