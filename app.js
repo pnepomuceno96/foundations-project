@@ -65,7 +65,7 @@ server.post('/users', mw.validateRegistration, (req, res) => {
 })
 
 
-// post ticket using token
+//post ticket using token
 server.post('/tickets', mw.validateTicket, (req, res) => {
     const token = req.headers.authorization.split(' ')[0];
     const body = req.body;
@@ -193,7 +193,8 @@ server.get('/tickets/pending', (req, res) => {
     ticketDao.getPendingTickets()
         .then((data) => {
             res.send({
-                message: `Successfully retrieved pending tickets: ${data.Items}`
+                message: "Successfully retrieved pending tickets",
+                body: data.Items
             })
             console.log(data.Items)
         })
@@ -218,7 +219,10 @@ server.get('/tickets', (req, res) => {
             console.log("payload = " + payload)
             ticketDao.getTicketsByRequesterId(payload.user_id)
                 .then((data) => {
-                    res.send('Successfully retrieved tickets')
+                    res.send({
+                        message: "Successfully retrieved tickets",
+                        body: data.Items
+                    })
                     console.log(data.Items)
                 }).catch((err) => {
                     res.statusCode = 401;
