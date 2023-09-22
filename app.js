@@ -65,7 +65,7 @@ server.post('/users', mw.validateRegistration, (req, res) => {
 })
 
 
-//TODO: post ticket using token
+// post ticket using token
 server.post('/tickets', mw.validateTicket, (req, res) => {
     const token = req.headers.authorization.split(' ')[0];
     const body = req.body;

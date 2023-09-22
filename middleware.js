@@ -8,14 +8,16 @@ function validateRegistration(req, res, next) {
         req.body.valid = false;
         next()
     } else {
+        // Make sure username is not already taken
         dao.getUserByUsername(req.body.username)
             .then((data) => {
                 if (data.Items === undefined || data.Items.length ==0){
                     req.body.valid = true;
                     next()
                 } else {
+                    res.send({message: 'Username is already taken'})
                     req.body.valid = false;
-                    next()
+                    
                 }
             })
             .catch(() => {
