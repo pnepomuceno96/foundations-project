@@ -50,7 +50,7 @@ server.post('/users', mw.validateRegistration, (req, res) => {
     const body = req.body;
     
     if (req.body.valid) {
-        userDao.addUser(uuid.v4(), body.username, body.password, {}, {}, false)
+        userDao.addUser(uuid.v4(), body.username, body.password, [], [], false)
             .then(() => {
                 res.send({
                     message: "User successfully registered"
@@ -68,10 +68,19 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
     const body = req.body;
     if (req.body.valid) {
         ticketDao.createTicket(uuid.v4(), body.amount, body.reason, body.requester_id, "pending")
-            .then(() => {
-                res.send({
-                    message: "Ticket successfully created"
-                })
+            .then((data) => {
+                console.log(`Posted data: ${data}`)
+                userDao.addTicketToUser(body.requester_id, body, res)
+                    .then(() => {
+                        res.send({
+                            message: "Ticket successfully created"
+                        })
+                    })
+                    .catch((err) => {
+                        res.send({
+                            message: `Ticket creation error: ${err}`
+                        })
+                    })
             })
             .catch((err) => {
                 res.send({message: `Ticket creation error: ${err}`})
@@ -140,7 +149,7 @@ server.get('/users', mw.validateUserCredentials, (req, res) => {
         userDao.getUserByUsername(body.username)
             .then((data) => {
                 const user = data.Items[0]
-                const token = jwtUtil.createJWT(user.username, user.isFinanceManager);
+                const token = jwtUtil.createJWT(user.user_id, user.username, user.isFinanceManager);
                 
                 res.send({
                     message: `Successfully authenticated ${user.username}`,
@@ -179,6 +188,7 @@ server.get('/tickets/pending', (req, res) => {
             console.log(data.Items)
         })
         .catch((err) => {
+            
             res.send({
                 message: `Ticket retrieval error: ${err}`
             })
@@ -186,19 +196,32 @@ server.get('/tickets/pending', (req, res) => {
     
 })
 
-// Get tickets by the author's user id
+// Get tickets by the user token
 server.get('/tickets', (req, res) => {
-    const requestUrl = url.parse(req.url).query;
-    console.log("requestUrl = ", requestUrl)
-    ticketDao.getTicketsByRequesterId(requestUrl)
-        .then((data) => {
-            res.send('Successfully retrieved tickets')
-            console.log(data.Items)
-        }).catch((err) => {
-            res.send({message: `Error: ${err}`})
+    //require authorization
+    const token = req.headers.authorization.split(' ')[0];
+    
+    //const requestUrl = url.parse(req.url).query;
+    //console.log("requestUrl = ", requestUrl)
+    jwtUtil.verifyTokenAndReturnPayload(token)
+        .then((payload) => {
+            console.log("payload = " + payload)
+            ticketDao.getTicketsByRequesterId(payload.user_id)
+                .then((data) => {
+                    res.send('Successfully retrieved tickets')
+                    console.log(data.Items)
+                }).catch((err) => {
+                    res.statusCode = 401;
+                    res.send({message: `Ticket retrieval failure: ${err}`})
+                })
         })
-})
+        .catch((err) => {
+            res.statusCode = 401
+            res.send({message: "Failed to authenticate token"})
+        })
+    })
 
+//PUT: change ticket status
 server.put('/tickets', (req, res) => {
     const requestUrl = url.parse(req.url).query;
     const body = req.body;

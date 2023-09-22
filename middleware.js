@@ -1,4 +1,4 @@
-const dao = require('./daos/userDao')
+const dao = require('./daos/userDao');
 const express = require('express');
 const server = express()
 
@@ -8,7 +8,6 @@ function validateRegistration(req, res, next) {
         req.body.valid = false;
         next()
     } else {
-        //Ensure username does not already exist
         dao.getUserByUsername(req.body.username)
             .then((data) => {
                 if (data.Items === undefined || data.Items.length ==0){
@@ -49,9 +48,11 @@ function validateUserCredentials(req, res, next) {
             }
         })
         .catch((err) => {
+            res.statusCode = 401
             res.send({message: `Error fetching username: ${err}`})
         })
 }
+
 
 
 module.exports = {

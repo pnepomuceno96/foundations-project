@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
 const Promise = require('bluebird');
 
-function createJWT(username, isFinanceManager) {
+function createJWT(user_id, username, isFinanceManager) {
     return jwt.sign({
+        user_id,
         username,
         isFinanceManager
         }, 'thisisasecret', {
