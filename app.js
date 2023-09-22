@@ -231,23 +231,38 @@ server.get('/tickets', (req, res) => {
         })
         .catch((err) => {
             res.statusCode = 401
-            res.send({message: "Failed to authenticate token"})
+            res.send({message: `Failed to authenticate token: ${err}`})
         })
     })
 
 //PUT: change ticket status
 server.put('/tickets', (req, res) => {
+    const token = req.headers.authorization.split(' ')[0];
     const requestUrl = url.parse(req.url).query;
     const body = req.body;
     console.log("body = ", body)
     console.log("requestUrl = ", requestUrl)
-    ticketDao.setTicketStatusById(requestUrl, body.status)
-        .then((data) => {
-            res.send({
-                message: `Successfully ${body.status} ticket ${requestUrl}`
-            })
-        }).catch((err) => {
-            res.send({message: `Error: ${err}`})
+    jwtUtil.verifyTokenAndReturnPayload(token)
+        .then((payload) => {
+            // Make sure that the user processing the ticket is a manager
+            if(payload.isFinanceManager === true) {
+                ticketDao.setTicketStatusById(requestUrl, body.status)
+                    .then((data) => {
+                        res.send({
+                            message: `Successfully ${body.status} ticket ${requestUrl}`
+                        })
+                    }).catch((err) => {
+                        res.statusCode = 401
+                        res.send({message: `Error: ${err}`})
+                    })
+            } else {
+                res.statusCode = 401,
+                res.send({message: 'You are not authorized to process tickets!'})
+            }
+        })
+        .catch((err) => {
+            res.statusCode = 401,
+            res.send({message: `Authorization error: ${err}`})
         })
 })
 
