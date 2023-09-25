@@ -3,7 +3,9 @@ const server = express()
 const uuid = require('uuid');
 const {createLogger, transports, format} = require('winston')
 const url = require('node:url');
+const URL = require('url').URL;
 const PORT = 3000;
+const baseUrl = `http://localhost:${PORT}`
 const bodyParser = require('body-parser');
 const userDao = require('./daos/userDao');
 const ticketDao = require('./daos/ticketDao')
@@ -207,60 +209,85 @@ server.get('/tickets/pending', (req, res) => {
     
 })
 
+
 // Get tickets by the user token
 server.get('/tickets', (req, res) => {
+    //logger.info("Getting all user's tickets")
+
     //require authorization
     const token = req.headers.authorization.split(' ')[0];
-    
-    //const requestUrl = url.parse(req.url).query;
+    //const type = 
+    const requestUrl = new URL(req.url, baseUrl);//url.parse(req.url).query;
+    console.log(requestUrl)
     //console.log("requestUrl = ", requestUrl)
     jwtUtil.verifyTokenAndReturnPayload(token)
         .then((payload) => {
             console.log("payload = " + payload)
-            ticketDao.getTicketsByRequesterId(payload.user_id)
-                .then((data) => {
-                    res.send({
-                        message: "Successfully retrieved tickets",
-                        body: data.Items
+            if(!requestUrl.search) {
+                ticketDao.getTicketsByRequesterId(payload.user_id)
+                    .then((data) => {
+                        res.send({
+                            message: "Successfully retrieved tickets",
+                            body: data.Items
+                        })
+                        console.log(data.Items)
+                    }).catch((err) => {
+                        res.statusCode = 401;
+                        res.send({message: `Ticket retrieval failure: ${err}`})
                     })
-                    console.log(data.Items)
-                }).catch((err) => {
-                    res.statusCode = 401;
-                    res.send({message: `Ticket retrieval failure: ${err}`})
-                })
+            } else {
+                //let params = new URLSearchParams(requestUrl)
+                const type = requestUrl.searchParams.get('type')
+                console.log("type = " + type)
+                ticketDao.getUsersTicketsByType(payload.user_id, type)
+                    .then((data) => {
+                        res.send({
+                            message: "Successfully retrieved tickets",
+                            body: data.Items
+                        })
+                        console.log(data.Items)
+                    }).catch((err) => {
+                        res.statusCode = 401;
+                        res.send({message: `Ticket retrieval failure. ${err}`})
+                    })
+            }
         })
         .catch((err) => {
             res.statusCode = 401
-            res.send({message: `Failed to authenticate token: ${err}`})
+            res.send({message: `Failed to authenticate token. ${err}`})
         })
     }
 )
 
 // Get user tickets by type
-server.get('/tickets/type', (req, res) => {
-    const token = req.headers.authorization.split(' ')[0];
-    const type = url.parse(req.url).query;
-    jwtUtil.verifyTokenAndReturnPayload(token)
-        .then((payload) => {
-            console.log("payload = " + payload)
-            ticketDao.getUsersTicketsByType(payload.user_id, type)
-                .then((data) => {
-                    res.send({
-                        message: "Successfully retrieved tickets",
-                        body: data.Items
-                    })
-                    console.log(data.Items)
-                }).catch((err) => {
-                    res.statusCode = 401;
-                    res.send({message: `Ticket retrieval failure: ${err}`})
-                })
-        })
-        .catch((err) => {
-            res.statusCode = 401
-            res.send({message: `Failed to authenticate token: ${err}`})
-        })
-})
-
+// server.get('/tickets/type', (req, res) => {
+//     const token = req.headers.authorization.split(' ')[0];
+//     // var thisUrl = new URL(lh + req.url)
+//     // const search = thisUrl.search
+//     // console.log("search = " +  search)
+//     // console.log("req.url = " + req.url)
+//     const type = url.parse(req.url).query;
+//     console.log("type = " + type)
+//     jwtUtil.verifyTokenAndReturnPayload(token)
+//         .then((payload) => {
+//             console.log("payload = " + payload)
+//             ticketDao.getUsersTicketsByType(payload.user_id, type)
+//                 .then((data) => {
+//                     res.send({
+//                         message: "Successfully retrieved tickets",
+//                         body: data.Items
+//                     })
+//                     console.log(data.Items)
+//                 }).catch((err) => {
+//                     res.statusCode = 401;
+//                     res.send({message: `Ticket retrieval failure: ${err}`})
+//                 })
+//         })
+//         .catch((err) => {
+//             res.statusCode = 401
+//             res.send({message: `Failed to authenticate token: ${err}`})
+//         })
+// })
 
 //PUT: change ticket status
 server.put('/tickets', (req, res) => {
