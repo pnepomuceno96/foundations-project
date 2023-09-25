@@ -54,6 +54,21 @@ function getUserByUsername(username) {
     return docClient.scan(params).promise()
 }
 
+function changeUserRole(user_id, isFinanceManager) {
+    const params = {
+        TableName: 'users',
+        Key: { user_id },
+        UpdateExpression: 'set #i = :value',
+        ExpressionAttributeNames: {
+            '#i': 'isFinanceManager'
+        },
+        ExpressionAttributeValues: {
+            ':value': isFinanceManager
+        }
+    }
+    return docClient.update(params).promise()
+}
+
 function getUserByUsernameAndPassword(username, password) {
     const params = {
         TableName: 'users',
@@ -94,5 +109,6 @@ function addTicketToUser(user_id, ticket, res) {
 
 
 module.exports = {
-    addUser, getUserByUsernameAndPassword, getUserByUsername, getUserByUserId, addTicketToUser
+    addUser, getUserByUsernameAndPassword, getUserByUsername, getUserByUserId, 
+    addTicketToUser, changeUserRole
 }

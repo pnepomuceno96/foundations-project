@@ -217,7 +217,7 @@ server.get('/tickets', (req, res) => {
     //require authorization
     const token = req.headers.authorization.split(' ')[0];
     //const type = 
-    const requestUrl = new URL(req.url, baseUrl);//url.parse(req.url).query;
+    const requestUrl = new URL(req.url, baseUrl);
     console.log(requestUrl)
     //console.log("requestUrl = ", requestUrl)
     jwtUtil.verifyTokenAndReturnPayload(token)
@@ -259,10 +259,44 @@ server.get('/tickets', (req, res) => {
     }
 )
 
+//PUT: change user role (isFinanceManager)
+server.put('/users', (req, res) => {
+    const token = req.headers.authorization.split(' ')[0];
+    const requestUrl = new URL(req.url, baseUrl);
+    const id = requestUrl.searchParams.get('id')
+    
+    //const body = req.body;
+    jwtUtil.verifyTokenAndReturnPayload(token)
+        .then((payload) => {
+            if(payload.isFinanceManager === true) {
+                userDao.getUserByUserId(id).then((data) => {
+                    //Alternate whether or not the user is a manager
+                    userDao.changeUserRole(id, !data.Items[0].isFinanceManager).then(() => {
+                        res.send({
+                            message: `Successfully changed ${data.Items[0].username}'s role`
+                        })
+                    }).catch((err) => {
+                        res.statusCode = 401
+                        res.send({message: `Error changing role. ${err}`})
+                    })
+                }).catch((err) => {
+                    res.statusCode = 401
+                    res.send({message: `Error fetching user. ${err}`})
+                })
+            } else {
+                res.statusCode = 401
+                res.send({message: "You are not authorized to change user roles."})
+            }
+        }).catch((err) => {
+            res.statusCode = 401
+            res.send({message: `Authorization error. ${err}`})
+        })
+})
+
 //PUT: change ticket status
 server.put('/tickets', (req, res) => {
     const token = req.headers.authorization.split(' ')[0];
-    const requestUrl = new URL(req.url, baseUrl);//url.parse(req.url).query;
+    const requestUrl = new URL(req.url, baseUrl);
     const id = requestUrl.searchParams.get('id')
     
     const body = req.body;
