@@ -28,12 +28,18 @@ function validateRegistration(req, res, next) {
 }
 
 function validateTicket(req, res, next) {
-    if(!req.body.amount || !req.body.reason) {
+    const validTypes = ["Travel", "Lodging", "Food", "Other"]
+    if(!req.body.amount || !req.body.reason || !req.body.type) {
         req.body.valid = false;
         next()
     } else {
-        req.body.valid = true;
-        next()
+        if (validTypes.includes(req.body.type)) {
+            req.body.valid = true;
+            next()
+        } else {
+            req.body.valid = false;
+            next()
+        }
     }
 }
 

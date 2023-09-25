@@ -6,12 +6,13 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-function createTicket(request_id, amount, reason, requester_id, status) {
+function createTicket(request_id, amount, type, reason, requester_id, status) {
     const params = {
         TableName: 'requests',
         Item: {
             request_id,
             amount,
+            type,
             reason,
             requester_id,
             status
@@ -56,6 +57,22 @@ function getTicketsByRequesterId(requester_id) {
     return docClient.scan(params).promise();
 }
 
+function getUsersTicketsByType(requester_id, type) {
+    const params = {
+        TableName: 'requests',
+        FilterExpression: '#r = :value AND #t = :value2',
+        ExpressionAttributeNames: {
+            '#r': 'requester_id',
+            '#t': 'type'
+        },
+        ExpressionAttributeValues: {
+            ':value': requester_id,
+            ':value2': type
+        }
+    };
+    return docClient.scan(params).promise()
+}
+
 //Accept or deny ticket/request
 function setTicketStatusById(request_id, status) {
     const params = {
@@ -73,5 +90,5 @@ function setTicketStatusById(request_id, status) {
 }
 
 module.exports = {
-    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId, getTicketById
+    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId, getTicketById, getUsersTicketsByType
 }

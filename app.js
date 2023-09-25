@@ -50,7 +50,7 @@ server.post('/users', mw.validateRegistration, (req, res) => {
     const body = req.body;
     
     if (req.body.valid) {
-        userDao.addUser(uuid.v4(), body.username, body.password, [], [], false)
+        userDao.addUser(uuid.v4(), body.username, body.password, [], false)
             .then(() => {
                 res.send({
                     message: "User successfully registered"
@@ -72,7 +72,7 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
     jwtUtil.verifyTokenAndReturnPayload(token)
         .then((payload) => {
             if (req.body.valid) {
-                ticketDao.createTicket(uuid.v4(), body.amount, body.reason, payload.user_id, "pending")
+                ticketDao.createTicket(uuid.v4(), body.amount, body.type, body.reason, payload.user_id, "pending")
                     .then((data) => {
                         console.log(`Posted data: ${data}`)
                         userDao.addTicketToUser(payload.user_id, body, res)
@@ -233,7 +233,34 @@ server.get('/tickets', (req, res) => {
             res.statusCode = 401
             res.send({message: `Failed to authenticate token: ${err}`})
         })
-    })
+    }
+)
+
+// Get user tickets by type
+server.get('/tickets/type', (req, res) => {
+    const token = req.headers.authorization.split(' ')[0];
+    const type = url.parse(req.url).query;
+    jwtUtil.verifyTokenAndReturnPayload(token)
+        .then((payload) => {
+            console.log("payload = " + payload)
+            ticketDao.getUsersTicketsByType(payload.user_id, type)
+                .then((data) => {
+                    res.send({
+                        message: "Successfully retrieved tickets",
+                        body: data.Items
+                    })
+                    console.log(data.Items)
+                }).catch((err) => {
+                    res.statusCode = 401;
+                    res.send({message: `Ticket retrieval failure: ${err}`})
+                })
+        })
+        .catch((err) => {
+            res.statusCode = 401
+            res.send({message: `Failed to authenticate token: ${err}`})
+        })
+})
+
 
 //PUT: change ticket status
 server.put('/tickets', (req, res) => {
@@ -246,7 +273,7 @@ server.put('/tickets', (req, res) => {
         .then((payload) => {
             // Make sure that the user processing the ticket is a manager
             if(payload.isFinanceManager === true) {
-                // TODO: Make sure that the ticket in question is still pending(not previously processed)
+                // Make sure that the ticket in question is still pending(not previously processed)
                 ticketDao.getTicketById(requestUrl).then((data) => {
                     console.log(`line 251 | data = ${JSON.stringify(data.Item)}`)
                     if (data.Item.status === 'pending') {

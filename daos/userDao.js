@@ -6,7 +6,7 @@ AWS.config.update({
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
-function addUser(user_id, username, password, pastTickets, pendingRequests, isFinanceManager) {
+function addUser(user_id, username, password, pastTickets, isFinanceManager) {
     const params = {
         TableName: 'users',
         Item: {
@@ -14,7 +14,6 @@ function addUser(user_id, username, password, pastTickets, pendingRequests, isFi
             username,
             password,
             pastTickets,
-            pendingRequests,
             isFinanceManager
         }
     }
@@ -70,7 +69,7 @@ function addTicketToUser(user_id, ticket, res) {
     console.log("Line 81 user_id = " + user_id)
     let currentTix = []
     getUserByUserId(user_id).then((data) => {
-        currentTix = data.Items[0].pendingRequests
+        currentTix = data.Items[0].pastTickets
     })
     .catch((err) => {
         res.send({message: "error fetching previous tickets: "+err})
@@ -81,7 +80,7 @@ function addTicketToUser(user_id, ticket, res) {
         Key: { user_id },
         UpdateExpression: 'set #t = :value',
         ExpressionAttributeNames: {
-            '#t': 'pendingRequests'
+            '#t': 'pastTickets'
         },
         ExpressionAttributeValues: {
             // add ticket to list of user's pendingRequests
