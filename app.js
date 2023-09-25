@@ -310,15 +310,30 @@ server.put('/tickets', (req, res) => {
                 ticketDao.getTicketById(id).then((data) => {
                     console.log(`line 251 | data = ${data.Item}`)
                     if (data.Item.status === 'pending') {
-                        ticketDao.setTicketStatusById(id, body.status, body.comment)
-                            .then(() => {
-                                res.send({
-                                    message: `Successfully ${body.status} ticket ${id}`
+                        // Check if body has optional comment
+                        if(body.comment) {
+                            logger.info("Setting ticket with comment")
+                            ticketDao.setTicketStatusWithCommentById(id, body.status, body.comment)
+                                .then(() => {
+                                    res.send({
+                                        message: `Successfully ${body.status} ticket ${id}`
+                                    })
+                                }).catch((err) => {
+                                    res.statusCode = 401
+                                    res.send({message: `Error: ${err}`})
                                 })
-                            }).catch((err) => {
-                                res.statusCode = 401
-                                res.send({message: `Error: ${err}`})
-                            })
+                        } else {
+                            logger.info("Setting ticket with no comment")
+                            ticketDao.setTicketStatusById(id, body.status)
+                                .then(() => {
+                                    res.send({
+                                        message: `Successfully ${body.status} ticket ${id}`
+                                    })
+                                }).catch((err) => {
+                                    res.statusCode = 401
+                                    res.send({message: `Error: ${err}`})
+                                })
+                        }
                     } else {
                         res.statusCode = 401,
                         res.send({message: "Ticket has already been processed"})

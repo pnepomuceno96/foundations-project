@@ -74,7 +74,23 @@ function getUsersTicketsByType(requester_id, type) {
 }
 
 //Accept or deny ticket/request
-function setTicketStatusById(request_id, status, comment) {
+function setTicketStatusById(request_id, status) {
+    const params = {
+        TableName: 'requests',
+        Key: { request_id },
+        UpdateExpression: 'set #s = :value',
+        ExpressionAttributeNames: {
+            '#s': 'status'
+        },
+        ExpressionAttributeValues: {
+            ':value': status
+        }
+    }
+    return docClient.update(params).promise()
+}
+
+//Accept or deny ticket/request with comment
+function setTicketStatusWithCommentById(request_id, status, comment) {
     const params = {
         TableName: 'requests',
         Key: { request_id },
@@ -92,5 +108,6 @@ function setTicketStatusById(request_id, status, comment) {
 }
 
 module.exports = {
-    createTicket, getPendingTickets, setTicketStatusById, getTicketsByRequesterId, getTicketById, getUsersTicketsByType
+    createTicket, getPendingTickets, setTicketStatusById, setTicketStatusWithCommentById, 
+    getTicketsByRequesterId, getTicketById, getUsersTicketsByType
 }
