@@ -310,7 +310,7 @@ server.put('/tickets', (req, res) => {
                 ticketDao.getTicketById(id).then((data) => {
                     console.log(`line 251 | data = ${data.Item}`)
                     if (data.Item.status === 'pending') {
-                        ticketDao.setTicketStatusById(id, body.status)
+                        ticketDao.setTicketStatusById(id, body.status, body.comment)
                             .then(() => {
                                 res.send({
                                     message: `Successfully ${body.status} ticket ${id}`

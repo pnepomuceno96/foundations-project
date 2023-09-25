@@ -74,16 +74,18 @@ function getUsersTicketsByType(requester_id, type) {
 }
 
 //Accept or deny ticket/request
-function setTicketStatusById(request_id, status) {
+function setTicketStatusById(request_id, status, comment) {
     const params = {
         TableName: 'requests',
         Key: { request_id },
-        UpdateExpression: 'set #s = :value',
+        UpdateExpression: 'set #s = :value, #c = :value2',
         ExpressionAttributeNames: {
-            '#s': 'status'
+            '#s': 'status',
+            '#c': 'managerComment'
         },
         ExpressionAttributeValues: {
-            ':value': status
+            ':value': status,
+            ':value2': comment
         }
     }
     return docClient.update(params).promise()
