@@ -5,8 +5,10 @@ const server = express()
 // Make sure request for registration includes both a username and password
 function validateRegistration(req, res, next) {
     if (!req.body.username || !req.body.password) {
+        res.statusCode = 401
+        res.send({message: 'Username and/or Password is missing'})
         req.body.valid = false;
-        next()
+        //next()
     } else {
         // Make sure username is not already taken
         dao.getUserByUsername(req.body.username)
@@ -15,12 +17,14 @@ function validateRegistration(req, res, next) {
                     req.body.valid = true;
                     next()
                 } else {
+                    res.statusCode = 401
                     res.send({message: 'Username is already taken'})
                     req.body.valid = false;
                     
                 }
             })
             .catch(() => {
+                res.statusCode = 401
                 res.send({message: `Error fetching username: ${err}`})
             })
         
