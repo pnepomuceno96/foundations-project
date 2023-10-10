@@ -17,14 +17,14 @@ function validateRegistration(req, res, next) {
                     req.body.valid = true;
                     next()
                 } else {
-                    res.statusCode = 401
+                    res.statusCode = 400
                     res.send({message: 'Username is already taken'})
                     req.body.valid = false;
                     
                 }
             })
             .catch(() => {
-                res.statusCode = 401
+                res.statusCode = 400
                 res.send({message: `Error fetching username: ${err}`})
             })
         

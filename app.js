@@ -62,6 +62,7 @@ server.post('/users', mw.validateRegistration, (req, res) => {
                 res.send({message: `Registration failed.\n  Error: ${err}`})
             })
     } else {
+        res.statusCode=400
         res.send({message: "Invalid username or password"})
     }
 })
@@ -73,6 +74,7 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
     const body = req.body;
     jwtUtil.verifyTokenAndReturnPayload(token)
         .then((payload) => {
+            if (!payload.isFinanceManager) {
             if (req.body.valid) {
                 ticketDao.createTicket(uuid.v4(), body.amount, body.type, body.reason, payload.user_id, "pending")
                     .then((data) => {
@@ -84,17 +86,24 @@ server.post('/tickets', mw.validateTicket, (req, res) => {
                                 })
                             })
                             .catch((err) => {
+                                res.statusCode=400
                                 res.send({
+                                   
                                     message: `Ticket creation error: ${err}`
                                 })
                             })
                     })
                     .catch((err) => {
+                        res.statusCode=400
                         res.send({message: `Ticket creation error: ${err}`})
                     })
             } else {
-                res.statusCode = 401
+                res.statusCode = 400
                 res.send({message: "Invalid ticket, missing important fields"})
+            }
+            } else {
+                res.statusCode = 400
+                res.send({message: "You are not allowed to create a ticket"})
             }
         }).catch((err) => {
             res.statusCode = 401
@@ -180,19 +189,26 @@ server.get('/users', mw.validateUserCredentials, (req, res) => {
                 
             })
             .catch((err) => {
+                res.statusCode=500
                 res.send({
+
                     message: `Login failed;\n    Server side error: ${err}`
                 })
             })
     } else {
+        res.statusCode = 400
         res.send({
+            
             message: "Login failed; Invalid credentials"
         })
     }
 })
 
 server.get('/tickets/pending', (req, res) => {
-    ticketDao.getPendingTickets()
+    const token = req.headers.authorization.split(' ')[0]
+    jwtUtil.verifyTokenAndReturnPayload(token).then ((payload) =>
+    {if(payload.isFinanceManager) {
+        ticketDao.getPendingTickets()
         .then((data) => {
             res.send({
                 message: "Successfully retrieved pending tickets",
@@ -201,13 +217,22 @@ server.get('/tickets/pending', (req, res) => {
             console.log(data.Items)
         })
         .catch((err) => {
-            
+            res.statusCode = 400
             res.send({
                 message: `Ticket retrieval error: ${err}`
             })
         })
+        } else {
+        res.statusCode=400
+        res.send({
+            message: 'Not allowed to view pending tickets'
+        })
+    }})
+        
+    }
+)
     
-})
+
 
 
 // Get tickets by the user token
@@ -276,7 +301,7 @@ server.put('/users', (req, res) => {
                             message: `Successfully changed ${data.Items[0].username}'s role`
                         })
                     }).catch((err) => {
-                        res.statusCode = 401
+                        res.statusCode = 400
                         res.send({message: `Error changing role. ${err}`})
                     })
                 }).catch((err) => {
